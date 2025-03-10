@@ -9,10 +9,14 @@ import com.ysbing.yadb.screenshot.Screenshot;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class Main {
     public static final String PACKAGE_NAME = "com.android.shell";
-    public static final int USER_ID = 0;
+
+    public static int USER_ID = getActiveUserId();
+
     private static final String ARG_KEY_BOARD = "-keyboard";
     private static final String ARG_TOUCH = "-touch";
     private static final String ARG_LAYOUT = "-layout";
@@ -61,6 +65,35 @@ public class Main {
         } catch (Throwable e) {
             System.out.println("MainException:" + getStackTraceAsString(e));
         }
+    }
+
+    private static int getActiveUserId() {
+        Process process = null;
+        BufferedReader reader = null;
+        try {
+            // Attempt to run the shell command
+            process = Runtime.getRuntime().exec("am get-current-user");
+            reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            int exitCode = process.waitFor();
+            if (exitCode == 0 && line != null && !line.trim().isEmpty()) {
+                return Integer.parseInt(line.trim());
+            }
+        } catch (Exception e) {
+            // If something goes wrong, just print the error and return 0
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (Exception ignored) {
+                }
+            }
+            if (process != null) {
+                process.destroy();
+            }
+        }
+        return 0;  // Default if we can't detect the user
     }
 
     private static boolean check(String arg) {
